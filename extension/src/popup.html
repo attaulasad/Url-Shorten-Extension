@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener</title>
+  <link rel="stylesheet" href="./popup.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <h1><i class="fas fa-link"></i> URL Shortener</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn" data-tab="login"><i class="fas fa-sign-in-alt"></i> <span class="tab-text">Login</span></button>
+      <button class="tab-btn" data-tab="signup"><i class="fas fa-user-plus"></i> Signup</button>
+      <button class="tab-btn active" data-tab="shorten"><i class="fas fa-link"></i> Shorten</button>
+      <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i> History</button>
+    </div>
+
+    <div id="login" class="tab-content">
+      <form id="login-form">
+        <div class="input-group">
+          <input type="text" id="login-username" placeholder="Username" required />
+          <i class="fas fa-user input-icon"></i>
+        </div>
+        <div class="input-group">
+          <input type="password" id="login-password" placeholder="Password" required />
+          <i class="fas fa-lock input-icon"></i>
+        </div>
+        <button type="submit" class="submit-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <p id="login-message" class="message"></p>
+    </div>
+
+    <div id="signup" class="tab-content">
+      <form id="signup-form">
+        <div class="input-group">
+          <input type="text" id="signup-username" placeholder="Username" required />
+          <i class="fas fa-user input-icon"></i>
+        </div>
+        <div class="input-group">
+          <input type="password" id="signup-password" placeholder="Password" required />
+          <i class="fas fa-lock input-icon"></i>
+        </div>
+        <button type="submit" class="submit-btn"><i class="fas fa-user-plus"></i> Signup</button>
+      </form>
+      <p id="signup-message" class="message"></p>
+    </div>
+
+    <div id="shorten" class="tab-content active">
+      <form id="shorten-form">
+        <div class="input-group">
+          <input type="url" id="long-url" placeholder="Enter URL (e.g., https://example.com)" required />
+          <i class="fas fa-link input-icon"></i>
+        </div>
+        <button type="submit" class="submit-btn"><i class="fas fa-compress-alt"></i> Shorten</button>
+      </form>
+      <p id="short-url" class="message"></p>
+      <button id="copy-btn" class="copy-btn" style="display: none;"><i class="fas fa-copy"></i> Copy</button>
+    </div>
+
+    <div id="history" class="tab-content">
+      <h3><i class="fas fa-history"></i> URL History</h3>
+      <ul id="url-list" class="history-list"></ul>
+    </div>
+  </div>
+  <script type="module" src="./popup.js"></script>
+</body>
+</html>

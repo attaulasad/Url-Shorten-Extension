@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shortify - Modern URL Shortener</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-gray-950 to-blue-950 text-gray-100 flex flex-col">
+  <div id="root" class="flex flex-col flex-grow"></div>
+  <script type="text/babel">
+    const React = window.React;
+    const ReactDOM = window.ReactDOM;
+    const { useState, useEffect } = React;
+    const API_BASE_URL = 'http://localhost:5000';
+
+    const copyToClipboard = (text, callback) => {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (callback) callback(true);
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+        if (callback) callback(false);
+      }
+    };
+
+    const App = () => {
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [token, setToken] = useState(localStorage.getItem('token') || '');
+      const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
+      const [showLogin, setShowLogin] = useState(false);
+      const [showSignup, setShowSignup] = useState(false);
+      const [currentView, setCurrentView] = useState('shorten');
+
+      useEffect(() => {
+        if (token && userId) {
+          setIsLoggedIn(true);
+        }
+      }, [token, userId]);
+
+      const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        setIsLoggedIn(false);
+        setToken('');
+        setUserId('');
+        setCurrentView('shorten');
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen">
+          <header className="bg-gray-900 p-4 shadow-xl">
+            <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
+              <h1 className="text-4xl font-extrabold text-teal-300 tracking-wide mb-4 md:mb-0">Shortify</h1>
+              <nav className="flex items-center space-x-4 sm:space-x-6">
+                {isLoggedIn ? (
+                  <>
+                    <button
+                      onClick={() => setCurrentView('shorten')}
+                      className={`nav-button text-lg font-medium px-4 py-2 rounded-full ${currentView === 'shorten' ? 'active' : 'text-gray-200 hover:text-white'}`}
+                    >
+                      Shorten
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('history')}
+                      className={`nav-button text-lg font-medium px-4 py-2 rounded-full ${currentView === 'history' ? 'active' : 'text-gray-200 hover:text-white'}`}
+                    >
+                      History
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('stats')}
+                      className={`nav-button text-lg font-medium px-4 py-2 rounded-full ${currentView === 'stats' ? 'active' : 'text-gray-200 hover:text-white'}`}
+                    >
+                      Stats
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="custom-button bg-red-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-red-700 shadow-lg"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowLogin(true)}
+                      className="nav-button text-lg font-medium px-4 py-2 rounded-full text-gray-200 hover:text-white"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => setShowSignup(true)}
+                      className="custom-button bg-blue-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-blue-700 shadow-lg"
+                    >
+                      Signup
+                    </button>
+                  </>
+                )}
+              </nav>
+            </div>
+            {isLoggedIn && (
+              <p className="text-center text-sm mt-3 px-4 py-2 bg-gray-800 bg-opacity-70 rounded-full mx-auto max-w-sm overflow-hidden text-ellipsis whitespace-nowrap">
+                Logged in as: <strong className="text-teal-300">{userId}</strong>
+              </p>
+            )}
+          </header>
+
+          <main className="container mx-auto p-4 flex flex-grow justify-center items-center py-8">
+            {showLogin && (
+              <LoginModal
+                setShowLogin={setShowLogin}
+                setIsLoggedIn={setIsLoggedIn}
+                setToken={setToken}
+                setUserId={setUserId}
+              />
+            )}
+            {showSignup && (
+              <SignupModal
+                setShowSignup={setShowSignup}
+                setIsLoggedIn={setIsLoggedIn}
+                setToken={setToken}
+                setUserId={setUserId}
+              />
+            )}
+            {isLoggedIn ? (
+              currentView === 'shorten' ? (
+                <ShortenUrl token={token} />
+              ) : currentView === 'history' ? (
+                <UrlHistory token={token} />
+              ) : (
+                <UserStats token={token} />
+              )
+            ) : (
+              <ShortenUrl token={null} />
+            )}
+          </main>
+
+          <footer className="bg-gray-900 p-4 text-center text-sm shadow-inner mt-auto">
+            <p>© {new Date().getFullYear()} Shortify. All rights reserved.</p>
+          </footer>
+        </div>
+      );
+    };
+
+    const LoginModal = ({ setShowLogin, setIsLoggedIn, setToken, setUserId }) => {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+          const response = await axios.post(`${API_BASE_URL}/login`, {
+            username,
+            password
+          });
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('userId', response.data.user_id);
+          setToken(response.data.token);
+          setUserId(response.data.user_id);
+          setIsLoggedIn(true);
+          setShowLogin(false);
+        } catch (err) {
+          setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-teal-700">
+            <h2 className="text-3xl font-bold text-center mb-6 text-blue-300">Login</h2>
+            {error && <p className="text-red-400 text-center mb-5 p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">{error}</p>}
+            <form onSubmit={handleLogin} className="space-y-5">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-4 bg-gray-700 border border-gray-600 rounded-full text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-4 bg-gray-700 border border-gray-600 rounded-full text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
+                required
+              />
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowLogin(false)}
+                  className="custom-button px-6 py-3 bg-gray-600 text-white rounded-full hover:bg-gray-500 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="custom-button px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-semibold"
+                >
+                  Login
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
+    const SignupModal = ({ setShowSignup, setIsLoggedIn, setToken, setUserId }) => {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+
+      const handleSignup = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+          const response = await axios.post(`${API_BASE_URL}/signup`, {
+            username,
+            password
+          });
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('userId', response.data.user_id);
+          setToken(response.data.token);
+          setUserId(response.data.user_id);
+          setIsLoggedIn(true);
+          setShowSignup(false);
+        } catch (err) {
+          setError(err.response?.data?.error || 'Signup failed. Please try a different username.');
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-teal-700">
+            <h2 className="text-3xl font-bold text-center mb-6 text-blue-300">Signup</h2>
+            {error && <p className="text-red-400 text-center mb-5 p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">{error}</p>}
+            <form onSubmit={handleSignup} className="space-y-5">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-4 bg-gray-700 border border-gray-600 rounded-full text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-4 bg-gray-700 border border-gray-600 rounded-full text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
+                required
+              />
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowSignup(false)}
+                  className="custom-button px-6 py-3 bg-gray-600 text-white rounded-full hover:bg-gray-500 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="custom-button px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-semibold"
+                >
+                  Signup
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
+    const ShortenUrl = ({ token }) => {
+      const [longUrl, setLongUrl] = useState('');
+      const [shortUrl, setShortUrl] = useState('');
+      const [qrCode, setQrCode] = useState('');
+      const [error, setError] = useState('');
+      const [copyFeedback, setCopyFeedback] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+
+      const handleShorten = async (e) => {
+        e.preventDefault();
+        setError('');
+        setShortUrl('');
+        setQrCode('');
+        setCopyFeedback('');
+        setIsLoading(true);
+
+        if (!longUrl.trim()) {
+          setError('Please enter a URL to shorten.');
+          setIsLoading(false);
+          return;
+        }
+        if (!longUrl.startsWith('http://') && !longUrl.startsWith('https://')) {
+          setError('Please enter a valid URL starting with http:// or https://');
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const endpoint = token ? '/shorten' : '/shorten-anonymous';
+          const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+          const response = await axios.post(`${API_BASE_URL}${endpoint}`, { long_url: longUrl }, config);
+          setShortUrl(response.data.short_url);
+          setQrCode(response.data.qr_code);
+          setLongUrl('');
+        } catch (err) {
+          setError(err.response?.data?.error || 'Failed to shorten URL. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const handleCopy = () => {
+        copyToClipboard(shortUrl, (success) => {
+          if (success) {
+            setCopyFeedback('Copied to clipboard!');
+            setTimeout(() => setCopyFeedback(''), 2000);
+          } else {
+            setError('Failed to copy to clipboard.');
+          }
+        });
+      };
+
+      const handleDownloadQr = () => {
+        if (qrCode) {
+          const link = document.createElement('a');
+          link.href = qrCode;
+          link.download = `shortify-qr-${shortUrl.split('/').pop()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      };
+
+      return (
+        <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-blue-700">
+          <h2 className="text-3xl font-bold text-center mb-6 text-blue-300">Shorten Your URL</h2>
+          {error && <p className="text-red-400 text-center mb-5 p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">{error}</p>}
+          {copyFeedback && <p className="text-green-400 text-center mb-5 p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-700 animate-fade-in-out">{copyFeedback}</p>}
+
+          {shortUrl && (
+            <div className="mb-6 p-4 bg-gray-700 rounded-lg flex flex-col space-y-4 shadow-inner border border-gray-600">
+              <div className="flex flex-col sm:flex-row items-center justify-between">
+                <p className="text-gray-200 text-lg break-all flex-grow mr-4 mb-3 sm:mb-0">
+                  Short URL: <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:text-teal-300 transition-colors duration-200 font-semibold">{shortUrl}</a>
+                </p>
+                <button
+                  onClick={handleCopy}
+                  className="custom-button px-6 py-3 bg-teal-600 text-white rounded-full hover:bg-teal-700 font-semibold text-base"
+                >
+                  Copy
+                </button>
+              </div>
+              {qrCode && (
+                <div className="flex flex-col items-center">
+                  <img src={qrCode} alt="QR Code" className="qr-code w-32 h-32 mb-4" />
+                  <button
+                    onClick={handleDownloadQr}
+                    className="custom-button px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-semibold text-base"
+                  >
+                    Download QR Code
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleShorten} className="space-y-5 max-w-xl mx-auto">
+            <input
+              type="url"
+              placeholder="Paste your long URL here (e.g., https://example.com/very/long/path)"
+              value={longUrl}
+              onChange={(e) => setLongUrl(e.target.value)}
+              className="w-full p-4 bg-gray-700 border border-gray-600 rounded-full text-white placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-lg"
+              required
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              className="custom-button w-full px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-semibold text-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <svg className="animate-spin h-5 w-5 text-white mr-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : 'Shorten URL'}
+            </button>
+          </form>
+        </div>
+      );
+    };
+
+    const UrlHistory = ({ token }) => {
+      const [urls, setUrls] = useState([]);
+      const [error, setError] = useState('');
+      const [isLoading, setIsLoading] = useState(true);
+      const [copyFeedback, setCopyFeedback] = useState('');
+
+      useEffect(() => {
+        const fetchHistory = async () => {
+          setIsLoading(true);
+          setError('');
+          setCopyFeedback('');
+          try {
+            const response = await axios.get(`${API_BASE_URL}/urls`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const sortedUrls = response.data.urls.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            setUrls(sortedUrls);
+          } catch (err) {
+            setError(err.response?.data?.error || 'Failed to fetch history. Please ensure you are logged in and the backend is running.');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        if (token) {
+          fetchHistory();
+        } else {
+          setError('Please log in to view your URL history.');
+          setIsLoading(false);
+        }
+      }, [token]);
+
+      const handleCopy = (text) => {
+        copyToClipboard(text, (success) => {
+          if (success) {
+            setCopyFeedback('Copied!');
+            setTimeout(() => setCopyFeedback(''), 2000);
+          } else {
+            setError('Failed to copy.');
+          }
+        });
+      };
+
+      return (
+        <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-blue-700 min-h-[400px] flex flex-col">
+          <h2 className="text-3xl font-bold text-center mb-6 text-blue-300">Your URL History</h2>
+          {error && <p className="text-red-400 text-center mb-5 p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">{error}</p>}
+          {copyFeedback && <p className="text-green-400 text-center mb-5 p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-700 animate-fade-in-out">{copyFeedback}</p>}
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center flex-grow py-8">
+              <svg className="animate-spin h-10 w-10 text-teal-400 mb-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-xl text-teal-300">Loading history...</p>
+            </div>
+          ) : urls.length === 0 && !error ? (
+            <p className="text-center text-gray-400 text-lg flex-grow flex items-center justify-center">No URLs shortened yet. Go to "Shorten" to create your first one!</p>
+          ) : (
+            <ul className="space-y-5 overflow-y-auto pr-2 custom-scrollbar">
+    {urls.map((url) => (
+        <li key={url.short_url} className="bg-gray-700 p-4 rounded-lg shadow-md border border-gray-600">
+            <p className="text-gray-300 mb-2 truncate-text">
+                <strong className="text-blue-200">Short URL:</strong>{' '}
+                <a href={url.short_url} target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:text-teal-300 transition-colors duration-200 font-medium truncate-text">{url.short_url}</a>
+            </p>
+            <p className="text-gray-400 mb-2 truncate-text w-full">
+                <strong className="text-gray-300">Original URL:</strong>{' '}
+                <span className="truncate-text inline-block max-w-full">{url.long_url}</span>
+            </p>
+            <p className="text-gray-500 text-sm">
+                <strong className="text-gray-400">Created:</strong>{' '}
+                {new Date(url.created_at).toLocaleString()}
+            </p>
+            <p className="text-gray-500 text-sm mb-3">
+                <strong className="text-gray-400">Clicks:</strong>{' '}
+                {url.clicks !== undefined ? url.clicks : '0'}
+            </p>
+            <button
+                onClick={() => handleCopy(url.short_url)}
+                className="custom-button px-4 py-2 bg-teal-600 text-white rounded-full text-sm hover:bg-teal-700 font-semibold"
+            >
+                Copy Short URL
+            </button>
+        </li>
+    ))}
+</ul>
+          )}
+        </div>
+      );
+    };
+
+    const UserStats = ({ token }) => {
+      const [stats, setStats] = useState({
+        totalUrlsShortened: '0',
+        geoLocation: 'No clicks recorded',
+        deviceType: 'N/A',
+        browser: 'N/A',
+        os: 'N/A',
+        uniqueClicks: '0',
+        returningVisitors: '0'
+      });
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState('');
+
+      useEffect(() => {
+        const fetchStats = async () => {
+          setIsLoading(true);
+          setError('');
+          try {
+            const userAgent = navigator.userAgent;
+            const browser = userAgent.match(/(chrome|safari|firefox|edge|opera)/i)?.[0] || 'Unknown';
+            const os = userAgent.match(/(windows|mac|linux|android|ios)/i)?.[0] || 'Unknown';
+
+            const response = await axios.get(`${API_BASE_URL}/stats`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            const backendStats = response.data;
+
+            setStats({
+              totalUrlsShortened: backendStats.total_urls_shortened ?? '0',
+              geoLocation: backendStats.geo_location ?? 'No clicks recorded',
+              deviceType: /mobile|android|iphone|ipad|ipod/i.test(userAgent) ? 'Mobile' : 'Desktop',
+              browser: browser.charAt(0).toUpperCase() + browser.slice(1),
+              os: os.charAt(0).toUpperCase() + os.slice(1),
+              uniqueClicks: backendStats.unique_clicks ?? '0',
+              returningVisitors: backendStats.returning_visitors ?? '0'
+            });
+          } catch (err) {
+            setError(err.response?.data?.error || 'Failed to fetch stats. Please try again later.');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        if (token) {
+          fetchStats();
+        } else {
+          setError('Please log in to view your user stats.');
+          setIsLoading(false);
+        }
+      }, [token]);
+
+      return (
+        <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-blue-700 min-h-[400px] flex flex-col">
+          <h2 className="text-3xl font-bold text-center mb-6 text-blue-300">Your Stats</h2>
+          {error && <p className="text-red-400 text-center mb-5 p-3 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">{error}</p>}
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center flex-grow py-8">
+              <svg className="animate-spin h-10 w-10 text-teal-400 mb-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-xl text-teal-300">Loading stats...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-lg text-gray-300">
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Total URLs Shortened:</p>
+                <p className="text-4xl font-extrabold text-teal-400">{stats.totalUrlsShortened}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Device Type:</p>
+                <p className="text-xl font-bold text-blue-400">{stats.deviceType}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Browser:</p>
+                <p className="text-xl font-bold text-cyan-400">{stats.browser}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Operating System:</p>
+                <p className="text-xl font-bold text-green-400">{stats.os}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Geo Location:</p>
+                <p className="text-xl font-bold text-yellow-400">{stats.geoLocation}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Unique Clicks:</p>
+                <p className="text-xl font-bold text-red-400">{stats.uniqueClicks}</p>
+              </div>
+              <div className="p-5 bg-gray-700 rounded-lg shadow-md border border-gray-600">
+                <p className="font-semibold text-blue-200 mb-2">Returning Visitors:</p>
+                <p className="text-xl font-bold text-purple-400">{stats.returningVisitors}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+  <script src="script.js"></script>
+</body>
+
+</html>

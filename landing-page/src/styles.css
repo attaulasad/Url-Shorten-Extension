@@ -1,0 +1,102 @@
+/* Custom styles for the URL Shortener landing page, inspired by Figma design */
+
+/* Modal backdrop styling */
+.modal-backdrop {
+    z-index: 1000;
+}
+
+/* Custom button styles with hover scaling */
+.custom-button {
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.custom-button:hover {
+    transform: scale(1.05);
+}
+
+/* Navigation button styles */
+.nav-button {
+    padding: 8px 16px;
+    font-size: 1rem;
+    color: #ffffff;
+    transition: color 0.2s ease-in-out;
+}
+
+.nav-button:hover {
+    color: #a5b4fc;
+}
+
+/* Short URL link styling */
+.short-url-link {
+    color: #a5b4fc;
+    font-weight: 500;
+}
+
+.short-url-link:hover {
+    text-decoration: underline;
+    color: #c7d2fe;
+}
+
+/* Custom card shadow */
+.card-shadow {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal animation */
+.modal-content {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.modal-content.hidden {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .nav-button {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .modal-content {
+        width: 90%;
+    }
+}
+
+/* Input field focus state */
+input:focus {
+    outline: none;
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 2px rgba(165, 180, 252, 0.3);
+}
+
+/* Truncate long URLs in history */
+.truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.truncate-text {
+    /* REMOVED: white-space: nowrap; */ /* This was forcing text onto a single line */
+    /* REMOVED: overflow: hidden; */    /* This was hiding overflowing content */
+    /* REMOVED: text-overflow: ellipsis; */ /* This was adding "..." for hidden content */
+
+    /* ADDED: Allow text to wrap naturally */
+    white-space: normal; /* Default behavior, allows wrapping */
+    
+    /* ADDED: Crucial for breaking long URLs or words that don't have spaces */
+    word-break: break-all; /* Breaks words when they would overflow their container */
+
+    /* The following properties are generally okay to keep for layout purposes,
+       as they define how the block behaves within its parent. */
+    display: inline-block;
+    max-width: 100%; /* Ensures it doesn't exceed its parent's width */
+    vertical-align: middle;
+}

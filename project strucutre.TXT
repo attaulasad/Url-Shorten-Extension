@@ -1,0 +1,24 @@
+url-shortener-project/
+├── extension/                  # Chrome extension frontend
+│   ├── src/
+│   │   ├── popup.html         # Popup UI
+│   │   ├── popup.css          # Popup styles
+│   │   ├── popup.js           # Popup logic
+│   │   ├── background.js      # Background script
+│   ├── manifest.json          # Extension configuration
+│   ├── package.json           # Node.js dependencies
+│   ├── vite.config.js         # Vite configuration
+├── backend/                    # Python Flask backend
+│   ├── app.py                 # Flask server
+│   ├            
+│             
+│   ├── requirements.txt       # Python dependencies
+│    ├── .env                   # Environment variables
+├── landing-page/               # Landing page frontend
+│   ├── src/
+│   │   ├── index.html         # Landing page UI
+│   │   ├── styles.css         # Landing page styles
+│   │   ├── script.js          # Landing page logic
+│   ├── package.json           # Node.js dependencies
+│   ├── vite.config.js         # Vite configuration
+├── README.md                   # Project documentation
