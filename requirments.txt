@@ -1,0 +1,10 @@
+flask
+flask-cors
+pymongo
+python-dotenv
+bcrypt
+shortuuid
+pyjwt
+requests
+qrcode
+Pillow
